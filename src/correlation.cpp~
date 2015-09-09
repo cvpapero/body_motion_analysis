@@ -1,0 +1,36 @@
+
+#include <iostream>
+#include <string>
+#include <fstream>
+#include <sstream>
+#include "picojson.h"
+
+using namespace std;
+
+void init()
+{
+
+}
+
+int main(int argc, char** argv)
+{
+string filename;
+filename="output.json";
+ifstream ifs(filename.c_str());
+    if( ifs.fail() )
+      {
+	cerr << "Error: Input file not found!" << endl;
+	return;
+      }
+stringstream ss;
+string thisline;
+
+while(getline(ifs, thisline))
+  {
+ss << thisline;
+}
+
+picojson::value val;
+picojson::parse(val, ss);
+picojson::object all=v.get<picojson::object>();
+}
