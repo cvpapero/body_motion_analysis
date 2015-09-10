@@ -189,6 +189,9 @@ include_directories(
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
 
+add_executable(acceleration src/acceleration.cpp)
+target_link_libraries(acceleration ${catkin_LIBRARIES})
+
 add_executable(joint_angle src/joint_angle.cpp)
 target_link_libraries(joint_angle ${catkin_LIBRARIES})
 

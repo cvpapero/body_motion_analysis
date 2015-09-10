@@ -96,6 +96,13 @@ int main(int argc, char** argv)
   int start_frame = 0, winsize = 30;
   int joint_index = 0;
 
+  /*
+  if(argc > 1)
+    {
+      
+    }
+  */
+
   //時間毎に保持された各関節角度を、
   //各関節毎に保持された時間的な変化のある関節角度に変換する
   init(filename, &thetas_all);
@@ -114,7 +121,7 @@ int main(int argc, char** argv)
 
   cout << "data_size (theta: " << thetas_all.size() 
        << ", frame: " << thetas_all[0].size() << ")"<< endl; 
-  cout << "range: "<< thetas_all[0].size()-winsize << endl;
+  cout << "window_size: "<< winsize << endl;
   vector< vector< vector<double> > > r_mat3;
 
   for(int i=0; i<thetas_all.size(); ++i)
@@ -137,7 +144,7 @@ int main(int argc, char** argv)
 	  for(int dt= -range; dt <= range; ++dt)
 	    {
 	      //相関係数
-	      double r_max=0, r_tmp, st_max=0;
+	      double r_max=0, st_max=0;
 	      //stは開始の時点
 	      for(int st=0; st <= thetas_all[j].size()-abs(dt)-winsize; ++st)
 		{
@@ -160,16 +167,20 @@ int main(int argc, char** argv)
 		      set.push_back(thetas_all[j][j_idx]);
 		      sets.push_back(set);
 		    }
+		  double r_tmp;
 		  cor_calc(sets, &r_tmp);
-		  if(r_max < r_tmp)
+		  if(fabs(r_max) < fabs(r_tmp))
 		    {
 		      r_max = r_tmp;
 		      st_max = st;
 		    }
 		}
 	      //cout << "max_st: "<< thetas_all[j].size()-winsize-abs(dt) << endl;
-	      if(i==j)
+	      //if(i==j)
+	      if(fabs(r_max) > 0.7) 
 		cout <<"dt: "<< dt << ", st:"<< st_max << ", r:"<< r_max << endl;
+	     
+
 	      r_vec.push_back(r_max);
 	    }
 	  // r_mat2.push_back(r_vec);
