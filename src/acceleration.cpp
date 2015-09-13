@@ -2,10 +2,15 @@
 加速度
 1.速度を求める
 2.加速度を求める
+
+
+もっとも速い速さを出力する
+速さの平均を出力する
 */
 
 #include "ros/ros.h"
 #include "std_msgs/String.h"
+#include "std_msgs/Float64.h"
 #include "humans_msgs/Humans.h"
 #include "geometry_msgs/Point.h"
 
@@ -31,17 +36,22 @@ class MyClass
 private:
   ros::NodeHandle nh;
   ros::Subscriber sub;
-  ros::Publisher pub;  
+  ros::Publisher velpub;  
+  ros::Publisher accpub;
 
   map<long long, Store> PointTable;
   map<long long, Store> VelTable;
 
+  int joint_index;
 
 public:
   MyClass()
   {
     sub = nh.subscribe("/humans/kinect_v2", 1, &MyClass::callback, this);
-    pub =  nh.advertise<std_msgs::String>("/pub_topic", 1); 
+    velpub =  nh.advertise<std_msgs::Float64>("/speed", 1); 
+    accpub =  nh.advertise<std_msgs::Float64>("/acceler", 1); 
+
+    joint_index = 10;
   }
   
   ~MyClass()
@@ -50,7 +60,6 @@ public:
 
   void callback(const humans_msgs::Humans::ConstPtr& msg)
   {
-
     for(int i=0; i<msg->human.size() ; ++i)
       {
 	//ジョイントが入ってないと計算不可
@@ -74,26 +83,70 @@ public:
 		diff_calc(PointTable[t_id], &vel);
 		VelTable[t_id].now = vel;
 		VelTable[t_id].now_time = PointTable[t_id].now_time;
-		cout << "vel:" << endl;
-		output(vel);
+		//cout << "vel:" << endl;
+		//output(vel);
 		//加速度の計算
 		if(!VelTable[t_id].prev.empty())
 		  {
 		    vector<geometry_msgs::Point> acc;
 		    diff_calc(VelTable[t_id], &acc);
-		    cout << "acc:" << endl;
-		    output(acc);
+		    //cout << "acc:" << acc[joint_index].x << ", " 
+		    //	 << acc[joint_index].y << ", " << acc[joint_index].z << endl;
+		    //output(acc);
+
+		    std_msgs::Float64 ac_msg;
+		    ac_msg.data = norm_calc( acc[joint_index] );
+		    //ac_msg.data = sum_calc( acc );
+		    accpub.publish(ac_msg);
 		  }
 
 		VelTable[t_id].prev = VelTable[t_id].now;
 		VelTable[t_id].prev_time = VelTable[t_id].now_time;
 		//VelTable[t_id] = vs;
+
+		std_msgs::Float64 sp_msg;
+		sp_msg.data = 0;
+		int max_index = 25;
+		for(int k=0; k<VelTable[t_id].now.size(); ++k)
+		  {
+		    double tmp_vel = norm_calc( VelTable[t_id].now[k] );
+		    if(sp_msg.data < tmp_vel)
+		      {
+			sp_msg.data = tmp_vel;
+			max_index = k;
+		      }
+		  }
+		//もし合計値でやるなら
+		//sp_msg.data = sum_calc( VelTable[t_id].now );
+		cout << "max_index:" << max_index << endl;
+		velpub.publish(sp_msg);
 	      }
 
+	    /*
+	    ros::Duration diff =  PointTable[t_id].now_time -  PointTable[t_id].prev_time;
+	    double time = diff.toSec();
+	    cout << "time: "<<time << endl;
+	    */
 	    PointTable[t_id].prev = PointTable[t_id].now;
 	    PointTable[t_id].prev_time = PointTable[t_id].now_time;
 	  }
       }
+  }
+
+  double norm_calc(geometry_msgs::Point p)
+  {
+    return sqrt(p.x*p.x + p.y*p.y + p.z*p.z);
+  }
+
+  double sum_calc(vector<geometry_msgs::Point> ps)
+  {
+    double sum;
+    for(int i=0; i<ps.size(); ++i)
+      {
+	sum += norm_calc(ps[i]);
+      }
+
+    return sum/ps.size();
   }
 
   void diff_calc(Store ps, vector<geometry_msgs::Point> *vel)
