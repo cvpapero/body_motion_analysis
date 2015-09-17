@@ -1,0 +1,136 @@
+/*
+原点からの変位を求める
+位置座標の原点は？カメラの位置では？？
+
+*/
+
+#include "ros/ros.h"
+#include "std_msgs/String.h"
+#include "std_msgs/Float64.h"
+#include "humans_msgs/Humans.h"
+#include "geometry_msgs/Point.h"
+
+//ファイル処理
+#include <string>
+#include <fstream>
+#include <sstream>
+#include "picojson.h"
+
+//描画
+//#include <boost/thread.hpp>
+//#include <functional>
+//#include <algorithm>
+//#include <numeric>
+
+#include <cv_bridge/cv_bridge.h>
+#include <opencv2/imgproc/imgproc.hpp>
+#include <opencv2/highgui/highgui.hpp>
+
+#define HEAD 3
+
+static const std::string OPENCV_WINDOW = "Image window";
+using namespace std;
+
+
+class MyClass
+{
+private:
+  ros::NodeHandle nh;
+  ros::Subscriber sub;
+  ros::Publisher dispub;  
+  //boost::thread* thread;
+  geometry_msgs::Point p;
+  double micro;
+  bool pm;
+
+public:
+  MyClass()
+  {
+    sub = nh.subscribe("/humans/kinect_v2", 1, &MyClass::callback, this);
+    dispub =  nh.advertise<std_msgs::Float64>("/displacement", 1); 
+    //thread = new boost::thread(boost::bind(&MyClass::threadCb, this));
+    
+    p.x=0;
+    p.y=0;
+    p.z=0;
+    cv::namedWindow(OPENCV_WINDOW);
+
+    micro = 5;
+    pm = true;
+  }
+  
+  ~MyClass()
+  {
+    //thread->interrupt();
+    //thread->join();
+    //delete thread;
+    cv::destroyWindow(OPENCV_WINDOW);
+  }
+
+  void callback(const humans_msgs::Humans::ConstPtr& msg)
+  {
+    for(int i=0; i<msg->human.size() ; ++i)
+      {
+	//ジョイントが入ってないと計算不可
+	if( msg->human[i].body.joints.size() )
+	  {
+	    long long t_id = msg->human[i].body.tracking_id;
+
+	    p = msg->human[i].body.joints[HEAD].position;
+
+
+	    cout<<"head---x: "<<p.x<<", y: "<<p.y<<", z: "<<p.z<<endl;
+
+	    //ループ回すのにかかる時間
+	    //ros::Duration diff =  PointTable[t_id].now_time -  PointTable[t_id].prev_time;
+	    //double time = diff.toSec();
+	    //cout << "time: "<<time << endl;
+	    
+	  }
+      }
+  }
+
+  void threadCb()
+  {
+    cv::Mat img = cv::Mat::zeros(500, 1000, CV_8UC3);
+    
+    double ox = img.cols/2;
+    double oy = img.rows;
+    //int lg=GetRandom(200, 400);
+    int lg = 300;
+    double m;
+    if( pm )
+      {
+	m = -1*micro;
+	pm=false;
+      }
+    else
+      {
+	m = micro;
+	pm=true;
+      }
+    cv::line(img, cv::Point(ox, oy), cv::Point(ox+p.y*lg+m, oy-p.x*lg+m), cv::Scalar(0,0,200), 3, 4); 
+    // Update GUI Window
+    cv::imshow(OPENCV_WINDOW, img);
+    cv::waitKey(1);
+  }
+
+  int GetRandom(int min,int max)
+  {
+    return min + (int)(rand()*(max-min+1.0)/(1.0+RAND_MAX));
+  }
+
+};
+
+int main(int argc, char** argv)
+{
+  ros::init(argc, argv, "displacement");
+  MyClass mc;
+  //ros::spin();
+  while(ros::ok())
+    {
+      ros::spinOnce();
+      mc.threadCb();
+    }
+  return 0;
+}

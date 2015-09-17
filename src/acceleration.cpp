@@ -94,10 +94,23 @@ public:
 		    //	 << acc[joint_index].y << ", " << acc[joint_index].z << endl;
 		    //output(acc);
 
+		    /*
 		    std_msgs::Float64 ac_msg;
-		    ac_msg.data = norm_calc( acc[joint_index] );
+		    ac_msg.data = 0;
+		    int max_acc_index = 25;
+		    for(int k=0; k<acc.size(); ++k)
+		      {
+			double tmp_acc = norm_calc( acc[k] );
+			if(fabs(ac_msg.data) < fabs(tmp_acc))
+			  {
+			    // ac_msg.data = tmp_acc;
+			    max_acc_index = k;
+			  } 
+		      }
 		    //ac_msg.data = sum_calc( acc );
+		    cout << "max_acc_index:" << max_acc_index <<", max_acc"<< ac_msg.data<< endl;
 		    accpub.publish(ac_msg);
+		    */
 		  }
 
 		VelTable[t_id].prev = VelTable[t_id].now;
@@ -106,33 +119,51 @@ public:
 
 		std_msgs::Float64 sp_msg;
 		sp_msg.data = 0;
+		//最大値を探す
 		int max_index = 25;
 		for(int k=0; k<VelTable[t_id].now.size(); ++k)
 		  {
-		    double tmp_vel = norm_calc( VelTable[t_id].now[k] );
-		    if(sp_msg.data < tmp_vel)
+		    if(index_check(k))
 		      {
-			sp_msg.data = tmp_vel;
-			max_index = k;
+			double tmp_vel = norm_calc( VelTable[t_id].now[k] );
+			if(sp_msg.data < tmp_vel)
+			  {
+			    sp_msg.data = tmp_vel;
+			    max_index = k;
+			  }
 		      }
 		  }
+		cout << "t_id:" << t_id<< ", max_vel_index:" << max_index <<", max_vel:"<< sp_msg.data<< endl;
+
 		//もし合計値でやるなら
 		//sp_msg.data = sum_calc( VelTable[t_id].now );
-		cout << "max_index:" << max_index << endl;
+		//もし値を指定するなら
+		//sp_msg.data = norm_calc( VelTable[t_id].now[18] );
+
 		velpub.publish(sp_msg);
 	      }
 
-	    /*
+	    //ループ回すのにかかる時間
 	    ros::Duration diff =  PointTable[t_id].now_time -  PointTable[t_id].prev_time;
 	    double time = diff.toSec();
 	    cout << "time: "<<time << endl;
-	    */
+	    
 	    PointTable[t_id].prev = PointTable[t_id].now;
 	    PointTable[t_id].prev_time = PointTable[t_id].now_time;
 	  }
       }
   }
 
+  bool index_check(int k)
+  {
+    if(k==15 || k== 19 || k==21 || k==22 || k==23 || k==24)
+      {
+	//cout << "this index is:"<<k<<endl;
+	return false;
+      }
+    else
+      return true;
+  }
   double norm_calc(geometry_msgs::Point p)
   {
     return sqrt(p.x*p.x + p.y*p.y + p.z*p.z);
@@ -146,31 +177,22 @@ public:
 	sum += norm_calc(ps[i]);
       }
 
-    return sum/ps.size();
+    return sum;
   }
 
   void diff_calc(Store ps, vector<geometry_msgs::Point> *vel)
   {
     ros::Duration diff = ps.now_time - ps.prev_time;
     double time = diff.toSec();
-    //vs->time = time;
 
-    //vector<double> vel;
-    //vector<geometry_msgs::Point> vel;
-    //cout << "time:" << time << endl;
     for(int i=0; i<ps.now.size(); ++i)
       {
-	//geometry_msgs::Point v;
-	double vx, vy, vz;
 	geometry_msgs::Point v;
 	v.x = (ps.now[i].x - ps.prev[i].x)/time;
 	v.y = (ps.now[i].y - ps.prev[i].y)/time;
 	v.z = (ps.now[i].z - ps.prev[i].z)/time;
-	//double velocty = sqrt(vx*vx+vy*vy+vz*vz)/time; 
-	//cout <<"vel[" << i <<"]: "<< velocty <<endl; 
 	vel->push_back(v);
       }
-    //vs->now = vel;
   }
 
   void output(vector<geometry_msgs::Point> input)
