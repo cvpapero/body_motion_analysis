@@ -137,7 +137,7 @@ public:
     
     double ox = img.cols/2;
     double oy = img.rows;
-    int lg = 300;
+    int lg = img.rows*3/5;
 
     int d_index;
     if(p.x <= 0.8)
