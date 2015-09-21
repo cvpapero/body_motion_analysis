@@ -1,6 +1,6 @@
 /*
 2015.9.19
-特定の人物に中止する仕組みを考える
+特定の人物に注視する仕組みを考える
 
 
 パラメータを設定してみる
@@ -55,6 +55,9 @@ private:
   int index;
   int width, height;
   map<int, long long> okao_t_id;
+  bool srv_switch;
+  long long attention_t_id;
+  int o_id;
 
 public:
   MyClass()
@@ -72,9 +75,12 @@ public:
     cv::namedWindow(OPENCV_WINDOW);
 
     index = 0;
-
+    attention_t_id = 0;
+    srv_switch = false;
     p_nh.param("width", width, 1000);
     p_nh.param("height", height, 500);
+
+    o_id = 0;
 
   }
   
@@ -91,12 +97,20 @@ public:
 	if( msg->human[i].body.joints.size() )
 	  {
 	    long long t_id = msg->human[i].body.tracking_id;
-	    p = msg->human[i].body.joints[HEAD].position;
-	    cout<<"nomal head---x: "<<p.x<<", y: "<<p.y<<", z: "<<p.z<<endl;
-	    //ループ回すのにかかる時間
-	    //ros::Duration diff =  PointTable[t_id].now_time -  PointTable[t_id].prev_time;
-	    //double time = diff.toSec();
-	    //cout << "time: "<<time << endl;	    
+
+	    //注目しているtracking_idかどうか
+	    if( attention_t_id == t_id )
+	      {
+		p = msg->human[i].body.joints[HEAD].position;
+		cout<<"nomal head---x: "<<p.x<<", y: "<<p.y<<", z: "<<p.z<<endl;
+	      }	      
+	    /*
+	    else
+	      {
+		p = msg->human[0].body.joints[HEAD].position;
+		cout<<"nomal head---x: "<<p.x<<", y: "<<p.y<<", z: "<<p.z<<endl;
+	      }
+	    */	  	    
 	  }
       }
     if(msg->human.size() == 0)
@@ -104,6 +118,8 @@ public:
 	p.x = 5.0;
 	p.y = 0;
 	p.z = 0;
+	attention_t_id = 0;
+	srv_switch = false;
       }
   }
 
@@ -114,35 +130,21 @@ public:
 	//ジョイントが入ってないと計算不可
 	if( msg->human[i].body.joints.size() )
 	  {
-	    int o_id = msg->human[i].max_okao_id;
-	    long long t_id = msg->human[i].body.tracking_id;
-	    okao_t_id[o_id] = t_id;
-	    //p = msg->human[i].body.joints[HEAD].position;
-	    //cout<<"recog head---x: "<<p.x<<", y: "<<p.y<<", z: "<<p.z<<endl;	    
+	    if( o_id == msg->human[i].face.persons[0].okao_id )
+	      {
+		attention_t_id = msg->human[i].body.tracking_id;
+	      }  
 	  }
       }
-    //cout << test << endl;
   }
 
   bool Service(humans_msgs::DatabaseSrv::Request &req,
 	       humans_msgs::DatabaseSrv::Response &res)
   {
-/*
-    if( req.rule == "p" )
-      {
-	//particularPersonPosition( req.person.okao_id ); 
-      }
-    else if( req.rule == "l" )
-      {
-	//lastPeoplePosition();
-      }
-    else
-      {
-	ROS_INFO("no match rule!");
-	return false;
-      }
-*/
-cout << "okao_id:"<< req.person.okao_id << okao_t_id[req.person.okao_id]<<endl;
+    //ここではokao_idを受け付けるのみ
+    cout << "okao_id:"<< req.person.okao_id << endl;
+    o_id = req.person.okao_id;
+    srv_switch = true;
     return true;
   }
 
@@ -155,7 +157,7 @@ cout << "okao_id:"<< req.person.okao_id << okao_t_id[req.person.okao_id]<<endl;
     int lg = img.rows*3/5;
 
     double amp = 5;
-    double feq = 20/p.x;
+    double feq = 15/p.x;
 
     //double micro_amp = 5;
     //double micro_feq = 10;
