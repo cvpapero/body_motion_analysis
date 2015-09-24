@@ -223,15 +223,15 @@ public:
 
     if(px < 0.7)
       {
-	fq = 20;
+	fq = 64;
       }
     else if(px >= 0.7 && px < 1.0)
       {
-	fq = 16;
+	fq = 32;
       }
     else if(px >= 1.0 && px < 1.4)
       {
-	fq = 12;
+	fq = 16;
       }
     else if(px >= 1.4 && px < 2.0)
       {
