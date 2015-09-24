@@ -1,4 +1,11 @@
 /*
+2015.9.22
+delayを生じさせる
+stack構造(vector)を使ってみる
+もしかしたら、これ失敗かもしれん
+
+わからん、、、どうすればいいんだろうか
+
 2015.9.19
 特定の人物に注視する仕組みを考える
 パラメータを設定してみる
@@ -42,7 +49,9 @@ private:
   ros::ServiceServer srv;
 
   ros::Publisher dispub;  
-  geometry_msgs::Point p;
+  //geometry_msgs::Point p;
+  geometry_msgs::Point pt;
+  vector<geometry_msgs::Point> p_buf;
 
   int index;
   int width, height;
@@ -50,6 +59,10 @@ private:
   bool srv_switch;
   long long attention_t_id;
   int o_id;
+
+  ros::Time prev_time;
+  ros::Time now_time;
+  double count_time;
 
 public:
   MyClass()
@@ -61,9 +74,9 @@ public:
 
     srv = nh.advertiseService("displace", &MyClass::Service, this);    
 
-    p.x = 5.0;
-    p.y = 0;
-    p.z = 0;
+    pt.x = 5.0;
+    pt.y = 0;
+    pt.z = 0;
     cv::namedWindow(OPENCV_WINDOW);
 
     index = 0;
@@ -74,6 +87,9 @@ public:
 
     o_id = 0;
 
+    prev_time = ros::Time::now();
+    now_time = ros::Time::now();
+    count_time = 0;
   }
   
   ~MyClass()
@@ -83,6 +99,7 @@ public:
 
   void callback(const humans_msgs::Humans::ConstPtr& msg)
   {
+    geometry_msgs::Point p;
     for(int i=0; i<msg->human.size() ; ++i)
       {
 	//ジョイントがないと不可
@@ -94,25 +111,42 @@ public:
 	    if( attention_t_id == t_id )
 	      {
 		p = msg->human[i].body.joints[HEAD].position;
+		p_buf.push_back(p);
 		cout<<"nomal head---x: "<<p.x<<", y: "<<p.y<<", z: "<<p.z<<endl;
-	      }	      
-	    /*
-	    else
-	      {
-		p = msg->human[0].body.joints[HEAD].position;
-		cout<<"nomal head---x: "<<p.x<<", y: "<<p.y<<", z: "<<p.z<<endl;
-	      }
-	    */	  	    
+
+		ros::Duration diff = now_time - prev_time;
+		//cout << diff.toSec() << endl;
+		count_time += diff.toSec();
+		cout << count_time << endl;
+ 
+		if(count_time > 5.0)
+		  {
+		    pt = p_buf.front();
+		    if(!p_buf.empty())
+		    {
+		      p_buf.erase( p_buf.begin()+1 );
+		    }
+		    cout << "p_buf size:"<< p_buf.size() << endl;
+		  }
+
+	      }	      	  	    
 	  }
       }
     if(msg->human.size() == 0)
       {
-	p.x = 5.0;
-	p.y = 0;
-	p.z = 0;
+	pt.x = 5.0;
+	pt.y = 0;
+	pt.z = 0;
 	attention_t_id = 0;
 	srv_switch = false;
+	count_time = 0;
+
       }
+
+    prev_time = now_time;
+    now_time = msg->header.stamp;
+
+ 
   }
 
   void recogCallback(const humans_msgs::Humans::ConstPtr& msg)
@@ -140,8 +174,21 @@ public:
     return true;
   }
 
+  
+  void time_checker()
+  {
+    if(count_time > 5.0)
+      {
+	pt = p_buf.front();
+	if(!p_buf.empty())
+	  p_buf.erase( p_buf.begin()+1 );
+      }
+  }
+
   void threadCb()
   {
+
+    //time_checker();
     cv::Mat img = cv::Mat::zeros(height, width, CV_8UC3);
     
     double ox = img.cols/2;
@@ -149,7 +196,7 @@ public:
     int lg = img.rows*3/5;
 
     double amp = 5;
-    double feq = 15/p.x;
+    double feq = 15/pt.x;
 
     //double micro_amp = 5;
     //double micro_feq = 10;
@@ -158,7 +205,7 @@ public:
 
     //double micro = micro_amp*sin(micro_feq*index*M_PI/180);
 
-    double theta = atan2(p.x, p.y) + m*M_PI/180;
+    double theta = atan2(pt.x, pt.y) + m*M_PI/180;
     double diff_x = lg*cos(theta);
     double diff_y = lg*sin(theta);
 

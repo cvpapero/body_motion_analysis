@@ -29,6 +29,15 @@
 static const std::string OPENCV_WINDOW = "Image window";
 using namespace std;
 
+class Store
+{
+public:
+  vector<geometry_msgs::Point> prev;
+  vector<geometry_msgs::Point> now;
+  ros::Time prev_time;
+  ros::Time now_time;
+};
+
 
 class MyClass
 {
@@ -51,6 +60,10 @@ private:
   long long attention_t_id;
   int o_id;
 
+  double now_vel;
+  //速度
+  map<long long, Store> PointTable;
+
 public:
   MyClass()
     : p_nh("~")
@@ -72,8 +85,8 @@ public:
     p_nh.param("width", width, 1000);
     p_nh.param("height", height, 500);
 
-    o_id = 0;
-
+    o_id = 1;
+    now_vel = 0;
   }
   
   ~MyClass()
@@ -95,14 +108,27 @@ public:
 	      {
 		p = msg->human[i].body.joints[HEAD].position;
 		cout<<"nomal head---x: "<<p.x<<", y: "<<p.y<<", z: "<<p.z<<endl;
-	      }	      
-	    /*
-	    else
-	      {
-		p = msg->human[0].body.joints[HEAD].position;
-		cout<<"nomal head---x: "<<p.x<<", y: "<<p.y<<", z: "<<p.z<<endl;
-	      }
-	    */	  	    
+
+		Store ps;
+		//注目する関節のindex
+		int ji = 10;
+		ps.now.push_back(msg->human[i].body.joints[ji].position);
+		//ps.now.push_back(msg->human[i].body.joints[].position);
+		PointTable[t_id].now = ps.now;
+		PointTable[t_id].now_time = ros::Time::now();
+		//prevに要素が入っていたら、速度を計算する
+		if(!PointTable[t_id].prev.empty())
+		  {
+		    vector<geometry_msgs::Point> vel;
+		    diff_calc(PointTable[t_id], &vel);
+		    //一時的にvel[0]
+		    now_vel = norm_calc( vel[0] );
+		    cout << "now_vel:"<< now_vel <<endl;
+		  }
+	    
+		PointTable[t_id].prev = PointTable[t_id].now;
+		PointTable[t_id].prev_time = PointTable[t_id].now_time;
+	      }	      	    
 	  }
       }
     if(msg->human.size() == 0)
@@ -110,9 +136,30 @@ public:
 	p.x = 5.0;
 	p.y = 0;
 	p.z = 0;
+	now_vel = 0;
 	attention_t_id = 0;
 	srv_switch = false;
       }
+  }
+
+  void diff_calc(Store ps, vector<geometry_msgs::Point> *vel)
+  {
+    ros::Duration diff = ps.now_time - ps.prev_time;
+    double time = diff.toSec();
+
+    for(int i=0; i<ps.now.size(); ++i)
+      {
+	geometry_msgs::Point v;
+	v.x = (ps.now[i].x - ps.prev[i].x)/time;
+	v.y = (ps.now[i].y - ps.prev[i].y)/time;
+	v.z = (ps.now[i].z - ps.prev[i].z)/time;
+	vel->push_back(v);
+      }
+  }
+
+  double norm_calc(geometry_msgs::Point p)
+  {
+    return sqrt(p.x*p.x + p.y*p.y + p.z*p.z);
   }
 
   void recogCallback(const humans_msgs::Humans::ConstPtr& msg)
@@ -146,11 +193,11 @@ public:
     
     double ox = img.cols/2;
     double oy = img.rows;
-    int lg = img.rows*3/5;
+    double lg = img.rows*2/5+now_vel*100;
 
     double amp = 5;
-    double feq = 15/p.x;
-
+    double feq = 16/(int)p.x;
+    cout << "feq:"<< feq <<endl; 
     //double micro_amp = 5;
     //double micro_feq = 10;
 
