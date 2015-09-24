@@ -199,15 +199,13 @@ public:
       lg = img.rows - 1;
 
     double amp = 5;
-    double feq = 16/(int)p.x;
+    //double feq = 16/(int)p.x;
+    double feq = feq_calc( p.x );
     cout << "feq:"<< feq <<endl; 
     //double micro_amp = 5;
     //double micro_feq = 10;
-
     double m = amp*sin(feq*index*M_PI/180);
-
     //double micro = micro_amp*sin(micro_feq*index*M_PI/180);
-
     double theta = atan2(p.x, p.y) + m*M_PI/180;
     double diff_x = lg*cos(theta);
     double diff_y = lg*sin(theta);
@@ -217,6 +215,34 @@ public:
     cv::imshow(OPENCV_WINDOW, img);
     cv::waitKey(1);
     ++index;
+  }
+
+  double feq_calc(double px)
+  {
+    double fq;
+
+    if(px < 0.7)
+      {
+	fq = 16;
+      }
+    else if(px >= 0.7 && px < 1.0)
+      {
+	fq = 12;
+      }
+    else if(px >= 1.0 && px < 1.4)
+      {
+	fq = 8;
+      }
+    else if(px >= 1.4 && px < 2.0)
+      {
+	fq = 4;
+      }
+    else if(px >= 2.0)
+      {
+	fq = 3;
+      }
+
+    return fq;
   }
 
   int GetRandom(int min,int max)
