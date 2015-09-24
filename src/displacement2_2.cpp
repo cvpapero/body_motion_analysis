@@ -195,6 +195,9 @@ public:
     double oy = img.rows;
     double lg = img.rows*2/5+now_vel*100;
 
+    if(lg > img.rows)
+      lg = img.rows - 1;
+
     double amp = 5;
     double feq = 16/(int)p.x;
     cout << "feq:"<< feq <<endl; 
