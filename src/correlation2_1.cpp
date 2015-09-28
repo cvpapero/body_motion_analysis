@@ -1,4 +1,6 @@
 /*
+二つの情報
+
 同時期にとった関節角度のデータファイルを二つ読み込み
 それらの相関をとる
 
@@ -38,21 +40,34 @@ void init(string filename, vector< vector<double> > *thetas_frame)
   
   picojson::value val;
   picojson::parse(val, ss);
-  picojson::object& all = val.get<picojson::object>();
-  picojson::array& array = all["data"].get<picojson::array>();
+  picojson::array& all = val.get<picojson::array>();
 
-  for(picojson::array::iterator it = array.begin(); 
-      it != array.end(); ++it)
+  //発狂しそう
+  for(picojson::array::iterator it = all.begin(); 
+      it != all.end(); ++it)
     {
-      vector<double> thetas;
-      picojson::array array_in = it->get<picojson::array>();
-      for(picojson::array::iterator it_in = array_in.begin(); 
-	  it_in != array_in.end(); ++it_in)
+      picojson::object& datas = it->get<picojson::object>();
+      picojson::array& datas_array = datas["datas"].get<picojson::array>();
+
+      for(picojson::array::iterator it2 = datas_array.begin(); 
+	  it2 != datas_array.end(); ++it2)
 	{
-	  thetas.push_back(it_in->get<double>());
+	  picojson::object& data = it2->get<picojson::object>();
+	  picojson::array& data_array = data["data"].get<picojson::array>();
+
+	  for(picojson::array::iterator it3 = data_array.begin(); 
+	      it3 != data_array.end(); ++it3)
+	    {
+	      thetas.push_back(it3->get<double>());
+	    }
+
+	  double time = data["time"].get<double>();
 	}
-      thetas_array.push_back(thetas);
+
     }
+
+  //まあでも、時間を保存する方法も考えないといけない。つかれた。今日は帰る
+
 
   for(int i=0; i < thetas_array[0].size(); ++i)
     {
