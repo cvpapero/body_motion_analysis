@@ -155,7 +155,7 @@ public:
     picojson::value data = picojson::value(users);
     output = data.serialize();
 
-    ofstream ofs("output2.json");
+    ofstream ofs("output_alone.json");
     ofs << output;
   }
 

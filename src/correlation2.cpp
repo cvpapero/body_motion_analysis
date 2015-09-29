@@ -95,7 +95,7 @@ void cor_calc(vector< vector<double> > datas, double *r)
 
 void process(int range, int winsize, double threshold, 
 	     vector<double> d1, vector<double> d2, vector< double > *r_vec, 
-	     int idx, int jdx)
+	     int i_index, int j_index)
 {
   //dtは遅れ
   for(int dt= -range; dt <= range; ++dt)
@@ -113,19 +113,27 @@ void process(int range, int winsize, double threshold,
 	      if(dt < 0)
 		{
 		  i_idx = st+idx;
-		  j_idx = st+dt+idx;
+		  j_idx = st+abs(dt)+idx;
 		}
 	      else if(dt >= 0)
 		{
-		  i_idx = st+dt+idx;
+		  i_idx = st+abs(dt)+idx;
 		  j_idx = st+idx;
 		}
+
+	      //cout << "idx:" << i_idx <<",st:"<<st<< ",dt:" << dt << endl; 
+	      //cout << "d1[" << i_idx <<"]:"<< d1[i_idx] <<endl;
+	      //cout << "d2[" << j_idx <<"]:"<< d2[j_idx] <<endl; 
+
 	      set.push_back(d1[i_idx]);
 	      set.push_back(d2[j_idx]);
 	      sets.push_back(set);
 	    }
 	  double r_tmp;
 	  cor_calc(sets, &r_tmp);
+	  if(i_index == j_index && dt == 0)
+	    cout <<"("<<i_index<<", "<<j_index << ") dt:"<< dt << ", st:" << st << ", r_tmp:" << r_tmp <<endl;
+
 	  if(fabs(r_max) <= fabs(r_tmp))
 	    {
 	      r_max = r_tmp;
@@ -133,7 +141,7 @@ void process(int range, int winsize, double threshold,
 	    }
 	}
       if(fabs(r_max) > threshold) 
-	cout <<"("<<idx<<", "<<jdx << ") dt:"<< dt << ", st:"<< st_max << ", r:"<< r_max << endl;
+	cout <<"("<<i_index<<", "<<j_index << ") dt:"<< dt << ", st:"<< st_max << ", r:"<< r_max << endl;
       
       r_vec->push_back(r_max);
     } 
@@ -151,7 +159,7 @@ int main(int argc, char** argv)
   file1="output.json";
   file2="output.json";
   int winsize = 30;
-  double threshold = 0.4;
+  double threshold = 0.7;
   /*
   if(argc > 1)
     {
