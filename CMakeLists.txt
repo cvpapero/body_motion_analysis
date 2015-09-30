@@ -200,9 +200,9 @@ target_link_libraries(displacement ${catkin_LIBRARIES} ${OpenCV_LIBS})
 add_executable(displacement2_2 src/displacement2_2.cpp)
 target_link_libraries(displacement2_2 ${catkin_LIBRARIES} ${OpenCV_LIBS})
 
-add_executable(joint_angle2 src/joint_angle2.cpp)
-target_link_libraries(joint_angle2 ${catkin_LIBRARIES})
+add_executable(joint_angle2_1 src/joint_angle2_1.cpp)
+target_link_libraries(joint_angle2_1 ${catkin_LIBRARIES})
 
-add_executable(joints_viz src/joints_viz.cpp)
-target_link_libraries(joints_viz ${catkin_LIBRARIES})
+add_executable(joints_time_viz src/joints_time_viz.cpp)
+target_link_libraries(joints_time_viz ${catkin_LIBRARIES})
 

@@ -50,6 +50,7 @@ class MyClass
 {
 private:
   ros::NodeHandle nh;
+  ros::NodeHandle pnh;
   ros::Subscriber sub;
   ros::Publisher pub;  
 
@@ -62,16 +63,22 @@ private:
 
   map<int, int> test;
 
-  string filename;
-
+  string joint_filename;
+  string output_filename;
+  stringstream out_file;
 
 public:
   MyClass()
+    :pnh("~")
   {
     sub = nh.subscribe("/humans/kinect_v2", 1, &MyClass::callback, this);
     pub =  nh.advertise<std_msgs::String>("/pub_topic", 1); 
-    filename = "joint_index.txt";
-    init_table(filename);
+
+    pnh.param<std::string>("output", output_filename, "test.json");
+    out_file << output_filename << ".json";
+
+    joint_filename = "joint_index.txt";
+    init_table(joint_filename);
   }
   
   ~MyClass()
@@ -155,8 +162,10 @@ public:
     picojson::value data = picojson::value(users);
     output = data.serialize();
 
-    ofstream ofs("output_alone.json");
+    ofstream ofs(out_file.str().c_str());
     ofs << output;
+
+    cout << "output_filename:"<<out_file.str()<<endl;
   }
 
   void callback(const humans_msgs::Humans::ConstPtr& msg)

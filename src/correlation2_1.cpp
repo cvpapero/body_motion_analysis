@@ -1,23 +1,6 @@
 /*
 2015.9.29---
-コンパイルは通るが、まだ試していない
-実験的に二人の人物に協力してもらってデータを取得して、
-それを使ってソースコードを完成させる
-一応、思ったとおりのことは、できているとは思うけど、、
 
-ロジックがおかしい
-配列にマイナスが入ってる。これは絶対変だ
-
-
-二つの情報
-
-同時期にとった関節角度のデータファイルを二つ読み込み
-それらの相関をとる
-
-やらないといけないのは
-1.同時に二人の人物の関節角度をとり、jsonファイルに出力するモジュール
-2.相関係数を可視化する。どの関節とどの関節が、どれぐらいの遅れの時相関が強いか
-3.実際の時刻情報の追加(前の関節角度が取得された時から今の関節角度が取得された時の時間)
 */
 
 
@@ -26,6 +9,8 @@
 #include <fstream>
 #include <sstream>
 #include "picojson.h"
+
+#include <time.h> 
 
 using namespace std;
 
@@ -148,7 +133,8 @@ void process(int winsize, double threshold,
   for(int dt= -max_range; dt <= max_range; ++dt)
     {
       //相関係数
-      double r_max=0, st_max=0;
+      double r_max=0;
+      int st_max=0;
       //stは開始の時点
       for(int st=0; st <= d1.size()-abs(dt)-winsize; ++st)
 	{
@@ -202,10 +188,14 @@ void process(int winsize, double threshold,
 
 	  double delay_start_time = times[st_max+abs(dt)]-times[0];
 
+	  /*
 	  cout <<"("<<i_index+1<<", "<<j_index+1 
 	       << ") dt:(frame:"<< dt << ", time:" << delay_time
 	       << " st:(frame:"<< st_max << ", time:" << start_time 
-	       << ") , r:" << r_max << endl;
+	       << "), r:" << r_max << endl;
+	  */
+	  printf("(%2d, %2d) dt:(frame:%5d, time:%4.4f), st:(frame:%5d, time:%4.4f), r: %2.7f\n", i_index+1, j_index+1, dt, delay_time, st_max, start_time, r_max);
+	  //printf("(%d, %d)  dt:(frame:%d, time:%f), st:(frame:%d, time:%f),", i_index+1, j_index+1, dt, delay_time);
 	}
       r_vec->push_back(r_max);
     } 
@@ -215,12 +205,14 @@ void process(int winsize, double threshold,
 
 int main(int argc, char** argv)
 {
+  clock_t start_clock = clock();  
+
   string file;
   vector< vector< vector<double> > > data;
   vector< double > times; 
-  file="output2.json";
+  file="output4.json";
 
-  int winsize = 80;
+  int winsize = 10;
   double threshold = 0.7;
 
   init(file, &data, &times);
@@ -254,4 +246,8 @@ int main(int argc, char** argv)
 	  process(winsize, threshold, data[0][i], data[1][j], times, &r_vec, i, j);
 	}
     }
+
+  clock_t end_clock = clock();
+
+  cout << "duration:" << (double)(end_clock - start_clock) / CLOCKS_PER_SEC << "[sec]" << endl;
 }
