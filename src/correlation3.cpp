@@ -1,6 +1,8 @@
 /*
 2015.10.1---
 windowの位置は最新に固定する
+
+自己相関の分母が小さい＝変化がない場合はハネる
 */
 
 
@@ -103,6 +105,8 @@ void corr_calc(vector< vector<double> > datas, double *r)
       sigma2sq += sigma2*sigma2;
     }
   *r = sigma1sigma2 / (sqrt(sigma1sq)*sqrt(sigma2sq));  
+
+  //cout<< "sqrt:" <<sqrt(sigma1sq)*sqrt(sigma2sq) <<endl;
 }
 
 
@@ -166,22 +170,19 @@ void process(int winsize, double threshold,
       sets.push_back(set2);
       double corr;
       corr_calc(sets, &corr);
-      
-      
+           
       if(fabs(corr) > threshold) 
 	{
-	  double delay_time, start_time;
+	  double delay_time;
 	  if(dt < 0)
 	    {
 	      delay_time = times[0] - times[abs(dt)];
-	      //start_time = times[st_max]-times[0];
 	    }
 	  else
 	    {
 	      delay_time = times[abs(dt)]-times[0];
-	      //start_time = times[st_max]-times[abs(dt)];
 	    }	  	  
-	  //double delay_start_time = times[st_max+abs(dt)]-times[0];	  
+	  
 	  printf("(%2d, %2d) dt:(frame:%5d, time:%4.4f), r: %2.7f\n", i_index+1, j_index+1, dt, delay_time, corr);	  
 	}      
       r_vec->push_back(corr);
@@ -198,7 +199,7 @@ int main(int argc, char** argv)
   string file;
   vector< vector< vector<double> > > data;
   vector< double > times; 
-  file="outdata2.json";
+  file="output4.json";
 
   int winsize = 20;
   double threshold = 0.7;
