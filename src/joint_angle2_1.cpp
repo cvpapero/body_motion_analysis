@@ -146,11 +146,14 @@ public:
 	    for(int j=0; j<it->second[i].data.size(); ++j)
 	      {
 		col.push_back(picojson::value(it->second[i].data[j]));
+	      }
 
+	    for(int jj=0; jj<jit->second[i].data.size(); ++jj)
+	      {
 		picojson::array jjcol;
-		jjcol.push_back(picojson::value(jit->second[i].data[j].x));
-		jjcol.push_back(picojson::value(jit->second[i].data[j].y));
-		jjcol.push_back(picojson::value(jit->second[i].data[j].z));
+		jjcol.push_back(picojson::value(jit->second[i].data[jj].x));
+		jjcol.push_back(picojson::value(jit->second[i].data[jj].y));
+		jjcol.push_back(picojson::value(jit->second[i].data[jj].z));
 		jcol.push_back(picojson::value(jjcol));
 	      }
 

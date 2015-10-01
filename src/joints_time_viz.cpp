@@ -131,6 +131,7 @@ public:
       }
   }
   
+  /*
   void jointInput(vector<geometry_msgs::Point> joints, vector<geometry_msgs::Point> *line_points)
   {
 
@@ -207,101 +208,74 @@ public:
     line_points->push_back(joints[15]);   
 
   }
+  */
 
-  void jointsCb(int frame)
+  void jointsCb(int *frame)
   {
     visualization_msgs::MarkerArray points;
+    visualization_msgs::MarkerArray lines;
     //int frame = 0;
     for(int user = 0; user < data_frame.size(); ++user)
       {
 
-	if(data_frame[user].size() <= frame)
-	  return; 
+	if(data_frame[user].size() <= *frame)
+	  *frame = 0; 
 
 	visualization_msgs::Marker point;
+	visualization_msgs::Marker line;
   
 	point.header.frame_id = "camera_link";
 	point.header.stamp = ros::Time::now();
 	point.action = visualization_msgs::Marker::ADD;
 
-	stringstream ss;
-	ss << "mk"<< user;
-	point.ns = ss.str();
+	line.header.frame_id = "camera_link";
+	line.header.stamp = ros::Time::now();
+	line.action = visualization_msgs::Marker::ADD;
+
+	stringstream pss;
+	pss << "point_"<< user;
+	point.ns = pss.str();
 	point.id = user;
 
+	stringstream lss;
+	lss << "line_"<< user;
+	line.ns = lss.str();
+	line.id = user;
+
 	point.type = visualization_msgs::Marker::POINTS;
+	line.type = visualization_msgs::Marker::LINE_LIST;
 
 	point.scale.x = 0.1;
 	point.scale.y = 0.1;
 	point.color = user_color[user];
 
-	for(int i=0; i<data_frame[user][frame].size(); ++i)
+	line.scale.x = 0.1;
+	//.scale.y = 0.1;
+	line.color = user_color[user];
+
+	vector<geometry_msgs::Point> joints;
+	for(int i=0; i<data_frame[user][*frame].size(); ++i)
 	  {
 	    geometry_msgs::Point p;
-	    p.x = data_frame[user][frame][i].x;
-	    p.y = data_frame[user][frame][i].y;
-	    p.z = data_frame[user][frame][i].z;
+	    p.x = data_frame[user][*frame][i].x;
+	    p.y = data_frame[user][*frame][i].y;
+	    p.z = data_frame[user][*frame][i].z;
 	    point.points.push_back( p );
+
+	    joints.push_back( p );
 	  } 
+
 	point.pose.orientation.w = 1;
- 
 	points.markers.push_back( point );
 
 	/*
 	cout << "user:" << user << ", data_frame.size():"<<data_frame.size()
-	     << ", data_frame[0].size:"<< data_frame[0].size() << endl;
+	     << ", data_frame[0].size:"<< data_frame[0][*frame].size() << endl;
 	*/
       }
 
     viz_pub.publish( points );
-
-    /*
-	visualization_msgs::Marker points, line_list;
-	
-	points.header.frame_id = line_list.header.frame_id  = "camera_link";
-	points.header.stamp = line_list.header.stamp = ros::Time::now();
-	
-	stringstream ss;
-	ss << "mk"<< i;
-	points.ns = line_list.ns = ss.str();
-	points.action = line_list.action = visualization_msgs::Marker::ADD;
-	points.pose.orientation.w = line_list.pose.orientation.w = 1.0;
-	points.id = 0;
-	line_list.id = 1;
-	points.type = visualization_msgs::Marker::POINTS;
-	line_list.type = visualization_msgs::Marker::LINE_LIST;
-	points.scale.x = 0.1;
-	points.scale.y = 0.1;
-	points.color = user_color[i];
-	//points.color.a = 1.0;
-	
-	line_list.scale.x = 0.1;
-	line_list.color.g = 1.0f;
-	line_list.color.a = 1.0;
-	
-	vector<geometry_msgs::Point> joints;
-	for(int j = 0; j < hm->human[i].body.joints.size(); ++j)
-	  {
-	    points.points.push_back( hm->human[i].body.joints[ j ].position );
-	    joints.push_back( hm->human[i].body.joints[ i ].position );
-	  }
- 
-	vector<geometry_msgs::Point> line_points;
-	jointInput( joints, &line_points );
-
-	for(int j=0; j<line_points.size(); ++j)
-	  {
-	    std_msgs::ColorRGBA col;
-	    col.g = 1.0f;
-	    line_list.colors.push_back(col);
-	  }
-
-	line_list.points = line_points; 
-	//sleep(1);
-	viz_pub.publish( points );
-	viz_pub.publish( line_list );	
-      }
-    */
+  
   }
 
 };
@@ -310,11 +284,11 @@ int main(int argc, char** argv)
 {
   ros::init(argc, argv, "joints_time_viz");
   JointsClient jc;
-  ros::Rate loop(10);
+  ros::Rate loop(5);
   int frame = 0;
   while(ros::ok())
     {
-      jc.jointsCb(frame);
+      jc.jointsCb(&frame);
       loop.sleep();
       cout << "frame:"<<frame<<endl; 
       ++frame;

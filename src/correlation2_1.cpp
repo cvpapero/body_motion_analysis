@@ -21,7 +21,6 @@ using namespace std;
 void init(string filename, vector< vector< vector<double> > > *data_frame, vector< double > *times)
 {
 
-  vector< vector<double> > thetas_array;
   ifstream ifs(filename.c_str());
   if( ifs.fail() )
     {
@@ -83,21 +82,21 @@ void init(string filename, vector< vector< vector<double> > > *data_frame, vecto
 void cor_calc(vector< vector<double> > datas, double *r)
 {
   vector< double > data_aves;
-  for(int i=0; i<datas[0].size(); ++i)
+  for(int i=0; i<datas.size(); ++i)
     {
       double sum = 0;
-      for(int j=0; j<datas.size(); ++j)
+      for(int j=0; j<datas[i].size(); ++j)
 	{
-	  sum += datas[j][i];
+	  sum += datas[i][j];
 	}
-      data_aves.push_back(sum/datas.size());
+      data_aves.push_back(sum/datas[i].size());
     }
 
   double sigma1sigma2 = 0, sigma1sq = 0, sigma2sq = 0;
-  for(int i=0; i<datas.size(); ++i)
+  for(int i=0; i<datas[0].size(); ++i)
     {
-      double sigma1 = datas[i][0]-data_aves[0];
-      double sigma2 = datas[i][1]-data_aves[1];
+      double sigma1 = datas[0][i]-data_aves[0];
+      double sigma2 = datas[1][i]-data_aves[1];
 
       sigma1sigma2 += sigma1*sigma2;
       sigma1sq += sigma1*sigma1;
@@ -139,9 +138,11 @@ void process(int winsize, double threshold,
       for(int st=0; st <= d1.size()-abs(dt)-winsize; ++st)
 	{
 	  vector< vector<double> > sets;
+	  vector<double> set1;
+	  vector<double> set2;
 	  for(int idx=0; idx<winsize; ++idx)
 	    {
-	      vector<double> set;
+
 	      int i_idx, j_idx;
 	      if(dt < 0)
 		{
@@ -158,10 +159,11 @@ void process(int winsize, double threshold,
 	      //cout << "d1[" << i_idx <<"]:"<< d1[i_idx] <<endl;
 	      //cout << "d2[" << j_idx <<"]:"<< d2[j_idx] <<endl; 
 
-	      set.push_back(d1[i_idx]);
-	      set.push_back(d2[j_idx]);
-	      sets.push_back(set);
+	      set1.push_back(d1[i_idx]);
+	      set2.push_back(d2[j_idx]);
 	    }
+	  sets.push_back(set1);
+	  sets.push_back(set2);
 	  double r_tmp;
 	  cor_calc(sets, &r_tmp);
 	  if(fabs(r_max) < fabs(r_tmp))
@@ -210,9 +212,9 @@ int main(int argc, char** argv)
   string file;
   vector< vector< vector<double> > > data;
   vector< double > times; 
-  file="output4.json";
+  file="outdata2.json";
 
-  int winsize = 10;
+  int winsize = 20;
   double threshold = 0.7;
 
   init(file, &data, &times);
